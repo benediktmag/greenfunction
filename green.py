@@ -49,7 +49,7 @@ def regionPoints( corner = 0j, width = 1., condition = lambda z: 0*z + 1, N = 10
 
 	'''
 
-	
+
 	minRe = corner.real
 	maxRe = minRe + width
 	minIm = corner.imag
@@ -100,7 +100,7 @@ def innerProduct( u, v, n, Q, K ):
 	q = np.polynomial.polynomial.polyval( Points, v )
 
 	Int = weight * ( p * np.conjugate(q) * np.exp( -2.*n * Q( Points ) ) )
-	
+
 	return Int.sum()
 
 
@@ -125,7 +125,7 @@ def Bergman( z, B ):
 	for j in range( len(B) ):
 
 		p_j = np.polynomial.polynomial.polyval( z, B[j] )
-		
+
 		S += p_j*np.conjugate(p_j)
 
 	# S has no imaginary part. Cast to real.
@@ -159,7 +159,7 @@ def Green( z, n, Q = lambda z: 0*z, K = regionPoints() ):
 	V = InnerProductSpace.InnerProductSpace( n, inProd )
 
 	B = V.GramSchmidt()
-	
+
 	return np.log( Bergman( z, B ) ) / (2.*n)
 
 
@@ -178,7 +178,7 @@ def drawGreen( n, Q = lambda z: 0*z, K = regionPoints(), show = True ):
 	show 	boolean (default: True)
 
 
-	
+
 	fig 	Shows the n-th approximation of the weighted Green function
 				G_K_Q(z) = sup{ u(z) : u in L(C), u <= Q on K }
 			in a neighborhood of K.
@@ -208,8 +208,12 @@ def drawGreen( n, Q = lambda z: 0*z, K = regionPoints(), show = True ):
 
 	Re, Im = np.meshgrid( xx, yy )
 	Z = Re + Im*1j
-	
+
 	green = Green( Z, n, Q, K )
+
+	plt.figure()
+	CS = plt.contour(Re, Im, green, cmap=cm.coolwarm)
+	plt.clabel(CS, inline=1, fontsize=8)
 
 	fig = plt.figure()
 	ax = fig.add_subplot(111, projection='3d')
@@ -248,11 +252,11 @@ def main():
 	a = 1.
 	b = 2.
 	condition = lambda z: (z.real/a)**2 + (z.imag/b)**2 < 1
-	
+
 	K = regionPoints( corner, width, condition, 100 )
 
 	Q = lambda z: 0.*z
-	
+
 	drawGreen( n, Q, K, show = False )
 
 
@@ -263,7 +267,11 @@ def main():
 	yy = np.linspace(-4,4,101)
 	Re, Im = np.meshgrid(xx,yy)
 	Z = Re + Im*1j
-	
+
+	plt.figure()
+	CS = plt.contour(Re, Im, GreenEll(Z,a,b), cmap=cm.coolwarm)
+	plt.clabel(CS, inline=1, fontsize=8)
+
 	fig = plt.figure()
 	ax = fig.add_subplot(111, projection='3d')
 

@@ -5,6 +5,9 @@
 #	TG
 #	11/08/2015
 #
+#	MBH
+#	22/06/2018
+#
 
 
 import numpy as np
@@ -131,6 +134,119 @@ def Bergman( z, B ):
 	# S has no imaginary part. Cast to real.
 	return S.real
 
+def Ingmar(z,B):
+	'''
+	S = Gauss( z, B )
+
+
+	z 		complex array (or number)
+	B 		n*n complex 2d-array
+			B[j] coefficients of a polynomial p_j
+
+
+	S = sum_j  a_j*p_j(z)
+
+	a_j 	normal distributed complex numbers with mean 0
+
+	'''
+	S = 0
+
+	for j in range( len(B) ):
+		p_j = np.polynomial.polynomial.polyval(z,B[j])
+		a_j = (np.random.normal(0,1,1)+np.random.normal(0,1,1)*1j)
+		S += a_j*p_j
+		L = abs(S)
+
+	return L.real
+
+def George( z, n, Q = lambda z: 0*z, K = regionPoints() ):
+	'''
+
+	g = George( z, n, Q, K )
+
+
+	z 		complex array (or number)
+	n 		integer
+	Q 		weight function				(default: constant function 0)
+	K = ( Points, weight )
+			Points 		complex array 	(default: unit square [0,1] + [0,1]i )
+			weight 		real			(default: 10^-4)
+
+
+	g 		The n-th approximation of the weighted Green function
+			G_K_Q(z) = sup{ u(z) : u in L(C), u <= Q on K }
+			evaluated at z.
+
+
+	'''
+	inProd = lambda u,v: innerProduct( u, v, n, Q, K )
+
+	V = InnerProductSpace.InnerProductSpace( n, inProd )
+
+	B = V.GramSchmidt()
+
+	return np.log( Ingmar( z, B ) ) / (1.*n)
+
+def drawGeorge( n, Q = lambda z: 0*z, K = regionPoints(), show = True ):
+	'''
+
+	fig = drawGeorge( n, Q, K )
+
+
+	n 		integer
+	Q 		weight function					(default: constant function 0)
+	K = ( Points, weight )
+			Points 		complex array 		(default: unit square [0,1] + [0,1]i )
+			weight 		real				(default: 10^-4)
+	show 	boolean (default: True)
+
+
+
+	fig 	Shows the n-th approximation of the weighted Green function
+				G_K_Q(z) = sup{ u(z) : u in L(C), u <= Q on K }
+			in a neighborhood of K.
+			If show == True, plt.show() is called.
+
+
+	'''
+
+	Points = K[0]
+
+	minRe = Points.real.min()
+	maxRe = Points.real.max()
+	minIm = Points.imag.min()
+	maxIm = Points.imag.max()
+
+	minmin = min(minRe,minIm)
+	maxmax = max(maxRe,maxIm)
+	width = maxmax - minmin
+
+	minmin = minmin - 0.5*width
+	maxmax = maxmax + 0.5*width
+
+	N = 100
+
+	xx = np.linspace( minmin, maxmax, N + 1 )
+	yy = np.linspace( minmin, maxmax, N + 1 )
+
+	Re, Im = np.meshgrid( xx, yy )
+	Z = Re + Im*1j
+
+	george = George( Z, n, Q, K )
+
+	plt.figure()
+	CS = plt.contour(Re, Im, george, cmap=cm.coolwarm)
+	plt.clabel(CS, inline=1, fontsize=8)
+
+	fig = plt.figure()
+	ax = fig.add_subplot(111, projection='3d')
+
+	surf = ax.plot_surface(Re, Im, george, rstride=1, cstride=1, cmap=cm.coolwarm, linewidth=0, antialiased=False)
+
+	if show:
+		plt.show()
+
+	return fig
 
 
 def Green( z, n, Q = lambda z: 0*z, K = regionPoints() ):
@@ -227,6 +343,7 @@ def drawGreen( n, Q = lambda z: 0*z, K = regionPoints(), show = True ):
 
 
 
+
 def GreenEll( z, a, b ):
 	'''
 	Green fall med dK = sporbaugur og Q = 0.
@@ -258,6 +375,8 @@ def main():
 	Q = lambda z: 0.*z
 
 	drawGreen( n, Q, K, show = False )
+
+	drawGeorge( n, Q, K, show = False )
 
 
 

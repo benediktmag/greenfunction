@@ -5,31 +5,39 @@
 #	TG
 #	11/08/2015
 #
+#	MBH
+#	22/06/2018
+#
 
 
 import numpy as np
-
 import InnerProductSpace
-
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import cm
 
 
-
-
 def regionPoints( corner = 0j, width = 1., condition = lambda z: 0*z + 1, N = 100 ):
+
 	'''
+	Example of usage:
 
-	Points, weight = regionPoints( corner, width, condition )
+		Points, weight = regionPoints( -5.0 - 5.0*1j, 10.0, lambda z: (z.real)**2 + (z.imag)**2 < 1/4., 1000 )
 
-	corner		complex number 		(default: 0)
-	width		real number 		(default: 1)
-	condition	function that takes in an array of complex numbers and returns 0/False or 1/True
-									(default: constant function 1)
-	N 			integer 			(default 100)
+	Returns:
 
-	We identify K as the region inside the square S:
+		Points:		A complex 1d-array of the numbers which fulfill the condition.
+		weight:		A real 1d-array corresponding to the area each point represents.
+
+	Recieves:
+
+		corner		complex number 		(default: 0)
+		width		real number 		(default: 1)
+		condition	lambda function		(default: constant function 1)
+		N 			integer 			(default 100)
+
+	We let S be the square with bottom left corner (corner) and width (width).
+	We let K be the region inside the square S which fulfills the condition:
 
 	  (corner + i*width) ------------- (corner + (1+i)*width)
 						 |    __   S |
@@ -39,14 +47,7 @@ def regionPoints( corner = 0j, width = 1., condition = lambda z: 0*z + 1, N = 10
 						 |  \___/    |
 				(corner) ------------- (corner + width)
 
-	that fulfills condition. That is
-			A point z is in K if and only if z is in S and condition(z) == 1/True
-
-
-	Points 		complex 1d-array of the numbers in K (at most all N^2 points of S).
-	weight 		real, the area each point represents.
-
-
+	Then a point z is in K if and only if z is in S and condition(z) == 1/True
 	'''
 
 
@@ -67,31 +68,34 @@ def regionPoints( corner = 0j, width = 1., condition = lambda z: 0*z + 1, N = 10
 	return Points, weight
 
 
-
 def innerProduct( u, v, n, Q, K ):
+
 	'''
+	Example of usage:
 
-	r = inProd( u, v, n, Q, K )
+		r = inProd( u, v, n, Q, K )
 
-	n 		integer
-	u,v 	complex 1d-arrays (representing polynomials)
-			len(u) == len(v) == n
-	Q 		weight function
-	K = ( Points, weight )
-			Points 		complex array
-			weight 		real
+	Returns:
 
-	r = <u,v>
-		where <u,v> is an inner product on a polynomial space defined in the following way:
+		r = <u,v> where <u,v> is an inner product on a polynomial space defined in the following way:
 
-		We interpret K to be a region containing the numbers 'Points', each one representing the area 'weight'.
+			We interpret K to be a region containing the numbers 'Points', each one representing the area 'weight'.
 
-		Define polynomials
-				p(z) = sum_j  u[j] * z^j
-			and q(z) = sum_j  v[j] * z^j
+				Define polynomials
+						p(z) = sum_j  u[j] * z^j
+					and q(z) = sum_j  v[j] * z^j
 
-		<u,v> := integral_K  p * conjugate(q) * exp( -2*n*Q ) dm
+			<u,v> := integral_K  p * conjugate(q) * exp( -2*n*Q ) dm
 
+	Recieves:
+
+		n 		integer
+		u,v 	complex 1d-arrays (representing polynomials)
+				len(u) == len(v) == n
+		Q 		weight function
+		K = ( Points, weight )
+				Points 		complex array
+				weight 		real
 	'''
 
 	Points, weight = K
@@ -104,20 +108,22 @@ def innerProduct( u, v, n, Q, K ):
 	return Int.sum()
 
 
-
 def Bergman( z, B ):
+
 	'''
+	Example of usage:
 
-	S = Bergman( z, B )
+		S = Bergman( z, B )
 
+	Revieves:
 
-	z 		complex array (or number)
-	B 		n*n complex 2d-array
-			B[j] coefficients of a polynomial p_j
+		z 		complex array (or number)
+		B 		n*n complex 2d-array
+				B[j] coefficients of a polynomial p_j
 
+	Returns:
 
-	S = sum_j  |p_j(z)|^2
-
+		S = sum_j  |p_j(z)|^2
 	'''
 
 	S = 0
@@ -131,11 +137,40 @@ def Bergman( z, B ):
 	# S has no imaginary part. Cast to real.
 	return S.real
 
+def Ingmar( z, B ):
+	'''
+	Example of usage:
+
+		S = Ingmar( z, B )
+
+	Revieves:
+
+		z 		complex array (or number)
+		B 		n*n complex 2d-array
+				B[j] coefficients of a polynomial p_j
+
+	Returns:
+
+		S = |sum_j  a_j*p_j(z)|
+where
+		a_j 	normal distributed complex numbers with mean 0
+	'''
+
+	S = 0
+
+	for j in range( len(B) ):
+		p_j = np.polynomial.polynomial.polyval(z,B[j])
+		a_j = (np.random.normal(0,1,1)+np.random.normal(0,1,1)*1j)
+		S += a_j*p_j
+		L = abs(S)
+
+	# L has no imaginary part. Cast to real.
+	return L.real
 
 
 def Green( z, n, Q = lambda z: 0*z, K = regionPoints() ):
-	'''
 
+	'''
 	g = Green( z, n, Q, K )
 
 
@@ -150,8 +185,6 @@ def Green( z, n, Q = lambda z: 0*z, K = regionPoints() ):
 	g 		The n-th approximation of the weighted Green function
 			G_K_Q(z) = sup{ u(z) : u in L(C), u <= Q on K }
 			evaluated at z.
-
-
 	'''
 
 	inProd = lambda u,v: innerProduct( u, v, n, Q, K )
@@ -163,80 +196,116 @@ def Green( z, n, Q = lambda z: 0*z, K = regionPoints() ):
 	return np.log( Bergman( z, B ) ) / (2.*n)
 
 
+def George( z, n, Q = lambda z: 0*z, K = regionPoints() ):
+	'''
+	Returns the n-th approximation of the weighted Green function
+	G_K_Q(z) = sup{ u(z) : u in L(C), u <= Q on K } evaluated at z.
 
-def drawGreen( n, Q = lambda z: 0*z, K = regionPoints(), show = True ):
+	Usage: 	g = George( z, n, Q, K )
+
+	Revives:
+
+		z 		complex array (or number)
+		n 		integer
+		Q 		weight function				(default: constant function 0)
+		K = ( Points, weight )
+				Points 		complex array 	(default: unit square [0,1] + [0,1]i )
+				weight 		real			(default: 10^-4)
 	'''
 
-	fig = drawGreen( n, Q, K )
+	inProd = lambda u,v: innerProduct( u, v, n, Q, K )
 
+	V = InnerProductSpace.InnerProductSpace( n, inProd )
 
-	n 		integer
-	Q 		weight function					(default: constant function 0)
-	K = ( Points, weight )
-			Points 		complex array 		(default: unit square [0,1] + [0,1]i )
-			weight 		real				(default: 10^-4)
-	show 	boolean (default: True)
+	B = V.GramSchmidt()
 
+	return np.log( Ingmar( z, B ) ) / (1.*n)
 
+def drawGreen( n, Q = lambda z: 0*z, corner = 0j, width = 1., condition = lambda z: 0*z + 1, N = 100, show = True, save = True, drawBoth = True):
+	'''
+	Example of usage:
 
-	fig 	Shows the n-th approximation of the weighted Green function
+		fig = drawGreen( n, Q, K )
+
+	Revieves:
+
+		n 			integer
+		Q 			weight function			(default: constant function 0)
+		corner		complex numbers			(default: 0 + 0i)
+		width		real numbers			(default: 1)
+		condition	lambda function			(default: constant function 1)
+		N   		integer					(default: 100)
+		show 		boolean 				(default: True)
+		save 		boolean					(default: True)
+		drawBoth	boolean					(default: True)
+
+	Calculates:
+
+			K = ( Points, weight )
+				Points 	complex array 			(default: unit square [0,1] + [0,1]i)
+				weight 	real					(default: 10^-4)
+
+		by using the function regionPoints( corner, width, condition, N ):
+
+	Returns:
+
+		figure which shows the n-th approximation of the weighted Green function
 				G_K_Q(z) = sup{ u(z) : u in L(C), u <= Q on K }
-			in a neighborhood of K.
-			If show == True, plt.show() is called.
+		in a neighborhood of K defined by the corner and width given.
 
-
+		If show == True, plt.show() is called.
+		If save == True, the figure is saved to a file in the same folder.
+		If drawBoth == True, the method draw both approimations and their corresponding contour plots.
 	'''
+	K = regionPoints( corner, width, condition, N )
 
 	Points = K[0]
 
-	minRe = Points.real.min()
-	maxRe = Points.real.max()
-	minIm = Points.imag.min()
-	maxIm = Points.imag.max()
+	minRe = corner.real
+	maxRe = corner.real + width
+	minIm = corner.imag
+	maxIm = corner.imag + width
 
-	minmin = min(minRe,minIm)
-	maxmax = max(maxRe,maxIm)
-	width = maxmax - minmin
-
-	minmin = minmin - 0.5*width
-	maxmax = maxmax + 0.5*width
-
-	N = 100
-
-	xx = np.linspace( minmin, maxmax, N + 1 )
-	yy = np.linspace( minmin, maxmax, N + 1 )
-
+	xx = np.linspace(minRe,maxRe,N+1)
+	yy = np.linspace(minIm,maxIm,N+1)
 	Re, Im = np.meshgrid( xx, yy )
 	Z = Re + Im*1j
 
 	green = Green( Z, n, Q, K )
 
-	plt.figure()
+	fig1 = plt.figure(1)
+	plt.xlim(minRe, maxRe)
+	plt.ylim(minIm, maxIm)
+	plt.gca().set_aspect('equal', adjustable='box')
 	CS = plt.contour(Re, Im, green, cmap=cm.coolwarm)
 	plt.clabel(CS, inline=1, fontsize=8)
 
-	fig = plt.figure()
-	ax = fig.add_subplot(111, projection='3d')
-
+	fig2 = plt.figure(2)
+	ax = fig2.add_subplot(111, projection='3d')
 	surf = ax.plot_surface(Re, Im, green, rstride=1, cstride=1, cmap=cm.coolwarm, linewidth=0, antialiased=False)
+
+	if drawBoth:
+		george = George( Z, n, Q, K )
+		fig3 = plt.figure(3)
+		plt.gca().set_aspect('equal', adjustable='box')
+		CS = plt.contour(Re, Im, george, cmap=cm.coolwarm)
+		plt.clabel(CS, inline=1, fontsize=8)
+
+		fig4 = plt.figure(4)
+		ax = fig4.add_subplot(111, projection='3d')
+		surf = ax.plot_surface(Re, Im, george, rstride=1, cstride=1, cmap=cm.coolwarm, linewidth=0, antialiased=False)
+
+	if save:
+		fig1.savefig('Greenfig1.pdf', bbox_inches='tight')
+		fig2.savefig('Greenfig2.pdf', bbox_inches='tight')
+		if drawBoth:
+			fig3.savefig('Georgefig1.pdf', bbox_inches='tight')
+			fig4.savefig('Georgefig2.pdf', bbox_inches='tight')
 
 	if show:
 		plt.show()
 
-	return fig
-
-
-
-def GreenEll( z, a, b ):
-	'''
-	Green fall med dK = sporbaugur og Q = 0.
-	GreenEll(z) = max{ 0, log( sqrt( (x/a)^2 + (y/b)^2 ) ) }
-	'''
-
-	r = (z.real/a)**2 + (z.imag/b)**2
-	gr = np.log( r*(r>1) + 1.*(r<=1) ) / 2.
-	return gr
-
+	return fig1, fig2, fig3, fig4
 
 
 def main():
@@ -245,39 +314,16 @@ def main():
 	n = 50
 
 	# Lower left corner and width of square S
-	corner = - 5 - 5j
-	width = 10.
+	corner = -2.0 - 2.0*1j
+	width = 4.0
+	N = 100
 
 	# z is in K iff z is in S and condition(z) == 1/True
-	a = 1.
-	b = 2.
-	condition = lambda z: (z.real/a)**2 + (z.imag/b)**2 < 1
+	condition = lambda z: (z.real)**2 + (z.imag)**2 < (0.9)**2
 
-	K = regionPoints( corner, width, condition, 100 )
+	Q = lambda z: np.log(abs(1/(1-z)))
 
-	Q = lambda z: 0.*z
-
-	drawGreen( n, Q, K, show = False )
-
-
-
-	# Draw exact solution for ellipse region.
-
-	xx = np.linspace(-4,4,101)
-	yy = np.linspace(-4,4,101)
-	Re, Im = np.meshgrid(xx,yy)
-	Z = Re + Im*1j
-
-	plt.figure()
-	CS = plt.contour(Re, Im, GreenEll(Z,a,b), cmap=cm.coolwarm)
-	plt.clabel(CS, inline=1, fontsize=8)
-
-	fig = plt.figure()
-	ax = fig.add_subplot(111, projection='3d')
-
-	surf = ax.plot_surface(Re, Im, GreenEll(Z,a,b), rstride=1, cstride=1, cmap=cm.coolwarm, linewidth=0, antialiased=False)
-	plt.show()
-
+	drawGreen( n, Q, corner, width, condition, N, save = False )
 
 
 if __name__ == '__main__':

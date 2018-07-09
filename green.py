@@ -308,23 +308,120 @@ def drawGreen( n, Q = lambda z: 0*z, corner = 0j, width = 1., condition = lambda
 	return fig1, fig2, fig3, fig4
 
 
+
+# A user interface to adjust the variables of drawGreen. Returns the variables.
+def interface() :
+	# Choosing n
+	print 'How many polynomials? Between zero and 10000. Press enter for automatic n = 50.'
+	while True :
+		n = raw_input()
+		if n == '' :
+			n = 50
+			break
+		n = int(n)
+
+		# in case of a bad choice of n
+		if (n > 0 and n < 10000):
+			break
+		print 'Too small or too large. Try again.'
+	
+	# Choosing corner
+	print 'Type the lower left corner point of graph (complex number of the form 4+4j). Automatic is 0.'
+	while True:
+		s = raw_input()
+		if s == '' :
+			corner = 0+0j
+			break
+		try :
+			corner = complex(s.replace(" ",""))
+			break
+		except ValueError:
+			print('Try again. The complex number should be of the form 1+2j.')
+
+
+	#Choosing width
+	print "Type the width of the graph (same for each dimention). Automatic is 4.0."
+	while True:
+		s = raw_input()
+		if s == '' :
+			width = 4.0
+			break
+		width = float(s)
+		if width > 0 and width < 100:
+			break
+		if width <= 0:
+			print "The width can't be negative or zero."
+		else :
+			print "Too large."
+
+	# The user chooses how he/she adjusts the condtions and the Q
+	print "You have the following choices for the conditions and Q.\n\"t\"or\"T\" for typing manually \n\"w\"or\"W\" for typing manually and writing them in a file \n\"r\"or\"R\" for reading a file already created \n\"a\"or\"A\" for automatic conditions (z.real)**2 + (z.imag)**2 < (0.9)**2 and Q as np.log(abs(1/(1-z)))."
+	while True:
+		tfwa = raw_input( )
+		if tfwa == "a" or tfwa == "A":
+			condition = lambda z: (z.real)**2 + (z.imag)**2 < (0.9)**2
+			Q = lambda z: np.log(abs(1/(1-z)))
+			break
+		if tfwa == "t" or tfwa == "T":
+			print "Type desired conditions for the region of the function."
+			while True:
+				tempcond = raw_input()
+				if tempcond != '' :
+					condition = lambda z: eval(tempcond)
+					break
+			break
+			print "Type desired function Q."
+			while True:
+				tempcond = raw_input()
+				if tempcond != '' :
+					condition = lambda z: eval(tempcond)
+					break
+			break
+		if tfwa == "w" or tfwa == "W":
+			print "Specify the name of the name of the file you would like to create. Make sure you do not overwrite any existing file. No need for .txt."
+			name = raw_input() + ".txt"
+			cond = raw_input( "Now type the conditions.")
+			qtemp = raw_input("Now type Q.")
+			with open(name, 'w') as file:
+				file.write(cond+"\n" +qtemp)
+			break
+		if tfwa == "r" or tfwa == "R":
+			nafni  = raw_input( "Type the name of your file or press i for instructions.") 
+			if nafni == "i" or nafni =="I":
+				print "Make sure your desired file is saved in the folder greenfuction. Write the name of the file without \".txt\" at the end. The file should have the equation for the conditions in the first line, and the formula for Q in the second line. No need for \"lambda z:\". Now type the name of your file."
+				filename = raw_input() +".txt"
+			else :
+				filename = nafni +".txt"
+			file = open(filename, "r") 
+			print "Condition:"+ file.readline(1)
+			print "Q:"+ file.readline(2)
+			condition = lambda z: eval(file.readline(1))
+			Q = lambda z: eval(file.readline(2))
+			break
+		print "What do you mean? Pick \"t\", \"w\", \"r\" or \"a\"."
+	return (n, corner, width, condition, Q)
+
+
+
+	#Main function vill ask you for n, corner and width, and the user has four choices about determening condition and Q
 def main():
+	#For convenience, it is possible to define the variables in the progrem and not have to go through the user interface
 
-	# Max degree of polynomials
+	#Automatic variables can be changed here 
 	n = 50
-
-	# Lower left corner and width of square S
-	corner = -2.0 - 2.0*1j
+	corner = -2-2j
 	width = 4.0
-	N = 100
-
-	# z is in K iff z is in S and condition(z) == 1/True
 	condition = lambda z: (z.real)**2 + (z.imag)**2 < (0.9)**2
-
 	Q = lambda z: np.log(abs(1/(1-z)))
 
-	drawGreen( n, Q, corner, width, condition, N, save = False )
-
+	#Here you choose whether or not to use the interface. 
+	yn = raw_input("Would you like to adjust the variables through the user interface? (y/n)\n")
+	if yn == "n" or yn == "N":
+		drawGreen( n, Q, corner, width, condition, 100, save = False )
+	else :
+		(n, corner, width, condition, Q) = interface()
+		drawGreen( n, Q, corner, width, condition, 100, save = False )
+	
 
 if __name__ == '__main__':
     main()

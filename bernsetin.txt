@@ -1,0 +1,2 @@
+abs(z.real+z.imag)<1
+0

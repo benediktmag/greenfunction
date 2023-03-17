@@ -408,11 +408,13 @@ def main():
 	#For convenience, it is possible to define the variables in the progrem and not have to go through the user interface
 
 	#Automatic variables can be changed here 
-	n = 50
+	n = 150
 	corner = -2-2j
 	width = 4.0
-	condition = lambda z: (z.real)**2 + (z.imag)**2 < (0.9)**2
+#	condition = lambda z: (z.real)**2 + (z.imag)**2 < (0.9)**2
+	condition = lambda z: abs((z.real) + (z.imag)) < 1
 	Q = lambda z: np.log(abs(1/(1-z)))
+   # Q = lambda z: abs(z)
 
 	#Here you choose whether or not to use the interface. 
 	yn = raw_input("Would you like to adjust the variables through the user interface? (y/n)\n")

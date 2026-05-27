@@ -1,6 +1,6 @@
 
 
-# Python 2.7.6
+# Python 3.14.5
 #
 #	TG
 #	11/08/2015
@@ -8,18 +8,18 @@
 #	MBH
 #	22/06/2018
 #
+# 	MAH
+#	27/05/2026
 
 
 import numpy as np
-import InnerProductSpace
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import cm
 
 
 def regionPoints( corner = 0j, width = 1., condition = lambda z: 0*z + 1, N = 100 ):
 
-	'''
+	r'''
 	Example of usage:
 
 		Points, weight = regionPoints( -5.0 - 5.0*1j, 10.0, lambda z: (z.real)**2 + (z.imag)**2 < 1/4., 1000 )
@@ -68,47 +68,51 @@ def regionPoints( corner = 0j, width = 1., condition = lambda z: 0*z + 1, N = 10
 	return Points, weight
 
 
-def innerProduct( u, v, n, Q, K ):
 
-	'''
-	Example of usage:
+def OrthogonalBasis(z, n, Q, K):
+    '''
+    Generates orthogonal polynomials on K and simultaneously evaluates 
+    them on the grid using Arnoldi iteration.
+    '''
+    Points, weight = K
+    W = weight * np.exp(-2. * n * Q(Points))
+    
+    def inner_product(p_eval, q_eval):
+        return np.sum(p_eval * np.conjugate(q_eval) * W)
 
-		r = inProd( u, v, n, Q, K )
+    P_K = np.zeros((n, len(Points)), dtype=complex)
+    
+    P_z = np.zeros((n,) + np.shape(z), dtype=complex)
+    
+    P_K[0] = np.ones_like(Points)
+    P_z[0] = np.ones_like(z)
+    
+    norm = np.sqrt(inner_product(P_K[0], P_K[0]).real)
+    P_K[0] /= norm
+    P_z[0] /= norm
+    
+    for k in range(1, n):
+        p_k_K = Points * P_K[k-1]
+        p_k_z = z * P_z[k-1]
+        
+        for j in range(k):
+            h = inner_product(p_k_K, P_K[j])
+            
+            p_k_K -= h * P_K[j]
+            p_k_z -= h * P_z[j]  
+            
+        norm = np.sqrt(inner_product(p_k_K, p_k_K).real)
+        
+        if norm > 1e-14:
+            P_K[k] = p_k_K / norm
+            P_z[k] = p_k_z / norm
+        else:
+            print(f"Warning: Norm collapsed at degree {k}.")
+            break
+            
+    return P_z
 
-	Returns:
-
-		r = <u,v> where <u,v> is an inner product on a polynomial space defined in the following way:
-
-			We interpret K to be a region containing the numbers 'Points', each one representing the area 'weight'.
-
-				Define polynomials
-						p(z) = sum_j  u[j] * z^j
-					and q(z) = sum_j  v[j] * z^j
-
-			<u,v> := integral_K  p * conjugate(q) * exp( -2*n*Q ) dm
-
-	Recieves:
-
-		n 		integer
-		u,v 	complex 1d-arrays (representing polynomials)
-				len(u) == len(v) == n
-		Q 		weight function
-		K = ( Points, weight )
-				Points 		complex array
-				weight 		real
-	'''
-
-	Points, weight = K
-
-	p = np.polynomial.polynomial.polyval( Points, u )
-	q = np.polynomial.polynomial.polyval( Points, v )
-
-	Int = weight * ( p * np.conjugate(q) * np.exp( -2.*n * Q( Points ) ) )
-
-	return Int.sum()
-
-
-def Bergman( z, B ):
+def Bergman(B ):
 
 	'''
 	Example of usage:
@@ -126,24 +130,18 @@ def Bergman( z, B ):
 		S = sum_j  |p_j(z)|^2
 	'''
 
-	S = 0
-
-	for j in range( len(B) ):
-
-		p_j = np.polynomial.polynomial.polyval( z, B[j] )
-
-		S += p_j*np.conjugate(p_j)
+	S = np.sum(B*np.conjugate(B), axis=0)
 
 	# S has no imaginary part. Cast to real.
 	return S.real
 
-def Ingmar( z, B ):
+def Ingmar(B ):
 	'''
 	Example of usage:
 
 		S = Ingmar( z, B )
 
-	Revieves:
+	Receives:
 
 		z 		complex array (or number)
 		B 		n*n complex 2d-array
@@ -158,11 +156,12 @@ where
 
 	S = 0
 
-	for j in range( len(B) ):
-		p_j = np.polynomial.polynomial.polyval(z,B[j])
-		a_j = (np.random.normal(0,1,1)+np.random.normal(0,1,1)*1j)
-		S += a_j*p_j
-		L = abs(S)
+	realParts = np.random.normal(0, 1, len(B))
+	imagParts = np.random.normal(0, 1, len(B))
+	a=realParts+imagParts*1j
+
+	S = np.tensordot(a, B, axes=1)
+	L = np.abs(S)
 
 	# L has no imaginary part. Cast to real.
 	return L.real
@@ -187,13 +186,9 @@ def Green( z, n, Q = lambda z: 0*z, K = regionPoints() ):
 			evaluated at z.
 	'''
 
-	inProd = lambda u,v: innerProduct( u, v, n, Q, K )
+	B = OrthogonalBasis(z, n, Q, K)
 
-	V = InnerProductSpace.InnerProductSpace( n, inProd )
-
-	B = V.GramSchmidt()
-
-	return np.log( Bergman( z, B ) ) / (2.*n)
+	return np.log( Bergman(B ) ) / (2.*n)
 
 
 def George( z, n, Q = lambda z: 0*z, K = regionPoints() ):
@@ -213,13 +208,9 @@ def George( z, n, Q = lambda z: 0*z, K = regionPoints() ):
 				weight 		real			(default: 10^-4)
 	'''
 
-	inProd = lambda u,v: innerProduct( u, v, n, Q, K )
+	B = OrthogonalBasis(z, n, Q, K)
 
-	V = InnerProductSpace.InnerProductSpace( n, inProd )
-
-	B = V.GramSchmidt()
-
-	return np.log( Ingmar( z, B ) ) / (1.*n)
+	return np.log( Ingmar(B ) ) / (1.*n)
 
 def drawGreen( n, Q = lambda z: 0*z, corner = 0j, width = 1., condition = lambda z: 0*z + 1, N = 100, show = True, save = True, drawBoth = True):
 	'''
@@ -271,7 +262,7 @@ def drawGreen( n, Q = lambda z: 0*z, corner = 0j, width = 1., condition = lambda
 	Re, Im = np.meshgrid( xx, yy )
 	Z = Re + Im*1j
 
-	green = Green( Z, n, Q, K )
+	green = Green( Z, n, Q, K )	
 
 	fig1 = plt.figure(1)
 	plt.xlim(minRe, maxRe)
@@ -312,9 +303,9 @@ def drawGreen( n, Q = lambda z: 0*z, corner = 0j, width = 1., condition = lambda
 # A user interface to adjust the variables of drawGreen. Returns the variables.
 def interface() :
 	# Choosing n
-	print 'How many polynomials? Between zero and 10000. Press enter for automatic n = 50.'
+	print('How many polynomials? Between zero and 10000. Press enter for automatic n = 50.')
 	while True :
-		n = raw_input()
+		n = input()
 		if n == '' :
 			n = 50
 			break
@@ -323,12 +314,10 @@ def interface() :
 		# in case of a bad choice of n
 		if (n > 0 and n < 10000):
 			break
-		print 'Too small or too large. Try again.'
-	
-	# Choosing corner
-	print 'Type the lower left corner point of graph (complex number of the form 4+4j). Automatic is 0.'
+		print('Too small or too large. Try again.')# Choosing corner
+	print('Type the lower left corner point of graph (complex number of the form 4+4j). Automatic is 0.')
 	while True:
-		s = raw_input()
+		s = input()
 		if s == '' :
 			corner = 0+0j
 			break
@@ -340,9 +329,9 @@ def interface() :
 
 
 	#Choosing width
-	print "Type the width of the graph (same for each dimention). Automatic is 4.0."
+	print("Type the width of the graph (same for each dimention). Automatic is 4.0.")
 	while True:
-		s = raw_input()
+		s = input()
 		if s == '' :
 			width = 4.0
 			break
@@ -350,55 +339,55 @@ def interface() :
 		if width > 0 and width < 100:
 			break
 		if width <= 0:
-			print "The width can't be negative or zero."
+			print("The width can't be negative or zero.")
 		else :
-			print "Too large."
-
-	# The user chooses how he/she adjusts the condtions and the Q
-	print "You have the following choices for the conditions and Q.\n\"t\"or\"T\" for typing manually \n\"w\"or\"W\" for typing manually and writing them in a file \n\"r\"or\"R\" for reading a file already created \n\"a\"or\"A\" for automatic conditions (z.real)**2 + (z.imag)**2 < (0.9)**2 and Q as np.log(abs(1/(1-z)))."
+			print("Too large.")# The user chooses how he/she adjusts the condtions and the Q
+	print('You have the following choices for the conditions and Q.\n"t" or "T" for typing manually \n"w" or "W" for typing manually and writing them in a file \n"r" or "R" for reading a file already created \n"a" or "A" for automatic conditions (z.real)**2 + (z.imag)**2 < (0.9)**2 and Q as np.log(abs(1/(1-z))).')
 	while True:
-		tfwa = raw_input( )
+		tfwa = input()
 		if tfwa == "a" or tfwa == "A":
 			condition = lambda z: (z.real)**2 + (z.imag)**2 < (0.9)**2
 			Q = lambda z: np.log(abs(1/(1-z)))
 			break
 		if tfwa == "t" or tfwa == "T":
-			print "Type desired conditions for the region of the function."
+			print("Type desired conditions for the region of the function.")
 			while True:
-				tempcond = raw_input()
+				tempcond = input()
 				if tempcond != '' :
 					condition = lambda z: eval(tempcond)
 					break
-			break
-			print "Type desired function Q."
+			
+			print("Type desired function Q.")
 			while True:
-				tempcond = raw_input()
+				tempcond = input()
 				if tempcond != '' :
 					condition = lambda z: eval(tempcond)
 					break
 			break
 		if tfwa == "w" or tfwa == "W":
-			print "Specify the name of the name of the file you would like to create. Make sure you do not overwrite any existing file. No need for .txt."
-			name = raw_input() + ".txt"
-			cond = raw_input( "Now type the conditions.")
-			qtemp = raw_input("Now type Q.")
+			print("Specify the name of the name of the file you would like to create. Make sure you do not overwrite any existing file. No need for .txt.")
+			name = input() + ".txt"
+			cond = input("Now type the conditions.")
+			qtemp = input("Now type Q.")
 			with open(name, 'w') as file:
 				file.write(cond+"\n" +qtemp)
 			break
 		if tfwa == "r" or tfwa == "R":
-			nafni  = raw_input( "Type the name of your file or press i for instructions.") 
+			nafni  = input("Type the name of your file or press i for instructions.") 
 			if nafni == "i" or nafni =="I":
-				print "Make sure your desired file is saved in the folder greenfuction. Write the name of the file without \".txt\" at the end. The file should have the equation for the conditions in the first line, and the formula for Q in the second line. No need for \"lambda z:\". Now type the name of your file."
-				filename = raw_input() +".txt"
+				print('Make sure your desired file is saved in the folder greenfuction. Write the name of the file without ".txt" at the end. The file should have the equation for the conditions in the first line, and the formula for Q in the second line. No need for "lambda z:". Now type the name of your file.')
+				filename = input() +".txt"
 			else :
 				filename = nafni +".txt"
 			file = open(filename, "r") 
-			print "Condition:"+ file.readline(1)
-			print "Q:"+ file.readline(2)
-			condition = lambda z: eval(file.readline(1))
-			Q = lambda z: eval(file.readline(2))
+			conditionStr = file.readline().strip()
+			QStr = file.readline().strip()
+			print("Condition:"+ conditionStr)
+			print("Q:"+ QStr)
+			condition = lambda z: eval(conditionStr)
+			Q = lambda z: eval(QStr)
 			break
-		print "What do you mean? Pick \"t\", \"w\", \"r\" or \"a\"."
+		print('What do you mean? Pick "t", "w", "r" or "a".')
 	return (n, corner, width, condition, Q)
 
 
@@ -412,12 +401,14 @@ def main():
 	corner = -2-2j
 	width = 4.0
 #	condition = lambda z: (z.real)**2 + (z.imag)**2 < (0.9)**2
-	condition = lambda z: abs((z.real) + (z.imag)) < 1
-	Q = lambda z: np.log(abs(1/(1-z)))
+	#condition = lambda z: abs((z.real) + (z.imag)) < 1
+	condition = lambda z: abs(z) <= 1.0
+	# Q = lambda z: np.log(abs(1/(1-z)))
    # Q = lambda z: abs(z)
+	Q = lambda z: 0 * z
 
 	#Here you choose whether or not to use the interface. 
-	yn = raw_input("Would you like to adjust the variables through the user interface? (y/n)\n")
+	yn = input("Would you like to adjust the variables through the user interface? (y/n)\n")
 	if yn == "n" or yn == "N":
 		drawGreen( n, Q, corner, width, condition, 100, save = False )
 	else :

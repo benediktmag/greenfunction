@@ -1,9 +1,11 @@
 
-# Python 2.7.6
+# Python 3.14.5
 #
 #	TG
 #	11/08/2015
 #
+# 	MAH
+#	27/05/2026
 
 import numpy as np
 
@@ -131,7 +133,7 @@ class InnerProductSpace:
 		v = v.flatten()
 
 		if len(v) != self.dim:
-			raise RuntimeError('Wrong vector dimension! Space dim: %d, Input dim: %d' % ( self.dim, len(v) ) )
+			raise RuntimeError(f'Wrong vector dimension! Space dim: {self.dim}, Input dim: {len(v)}')
 
 		return v
 
@@ -195,7 +197,7 @@ class InnerProductSpace:
 
 
 		if not self.contains( u ):
-		 	u = self.cast( u )
+			u = self.cast( u )
 
 
 		scale = self.inProd( u, u ).real
@@ -290,7 +292,7 @@ def main():
 	w = V.proj(v,u)
 
 
-	print InnerProductSpace.__doc__
+	print(InnerProductSpace.__doc__)
 
 
 

@@ -68,8 +68,18 @@ def regionPoints( corner = 0j, width = 1., condition = lambda z: 0*z + 1, N = 10
 	return Points, weight
 
 
+def boundaryPoints(gamma=lambda t: 0j + 0.9 * np.exp(1j * t),N=10000):
+	t=np.linspace(0,2*np.pi,N,endpoint=False)
+	dt=1/N
 
-def OrthogonalBasis(z, n, Q, K):
+	Points = gamma(t)
+
+	gamma_der = (gamma(t+dt/2)-gamma(t-dt/2))/dt
+	weight = np.abs(gamma_der) * dt
+
+	return Points, weight
+
+def OrthogonalBasis(grid, n, Q, K):
     '''
     Generates orthogonal polynomials on K and simultaneously evaluates 
     them on the grid using Arnoldi iteration.
@@ -82,35 +92,35 @@ def OrthogonalBasis(z, n, Q, K):
 
     P_K = np.zeros((n, len(Points)), dtype=complex)
     
-    P_z = np.zeros((n,) + np.shape(z), dtype=complex)
+    P_grid = np.zeros((n,) + np.shape(grid), dtype=complex)
     
     P_K[0] = np.ones_like(Points)
-    P_z[0] = np.ones_like(z)
+    P_grid[0] = np.ones_like(grid)
     
     norm = np.sqrt(inner_product(P_K[0], P_K[0]).real)
     P_K[0] /= norm
-    P_z[0] /= norm
+    P_grid[0] /= norm
     
-    for k in range(1, n):
-        p_k_K = Points * P_K[k-1]
-        p_k_z = z * P_z[k-1]
+    for d in range(1, n):
+        p_d_K = Points * P_K[d-1]
+        p_d_grid = grid * P_grid[d-1]
         
-        for j in range(k):
-            h = inner_product(p_k_K, P_K[j])
+        for j in range(d):
+            h = inner_product(p_d_K, P_K[j])
             
-            p_k_K -= h * P_K[j]
-            p_k_z -= h * P_z[j]  
+            p_d_K -= h * P_K[j]
+            p_d_grid -= h * P_grid[j]  
             
-        norm = np.sqrt(inner_product(p_k_K, p_k_K).real)
+        norm = np.sqrt(inner_product(p_d_K, p_d_K).real)
         
         if norm > 1e-14:
-            P_K[k] = p_k_K / norm
-            P_z[k] = p_k_z / norm
+            P_K[d] = p_d_K / norm
+            P_grid[d] = p_d_grid / norm
         else:
-            print(f"Warning: Norm collapsed at degree {k}.")
+            print(f"Warning: Norm collapsed at degree {d}.")
             break
             
-    return P_z
+    return P_grid
 
 def Bergman(B ):
 
@@ -165,6 +175,12 @@ where
 
 	# L has no imaginary part. Cast to real.
 	return L.real
+
+def Szego(z, n, Q = lambda z: 0*z, K_boundary = boundaryPoints()):
+	S = np.sum(B*np.conjugate(B), axis=0)
+
+	# S has no imaginary part. Cast to real.
+	return S.real
 
 
 def Green( z, n, Q = lambda z: 0*z, K = regionPoints() ):
@@ -248,9 +264,9 @@ def drawGreen( n, Q = lambda z: 0*z, corner = 0j, width = 1., condition = lambda
 		If save == True, the figure is saved to a file in the same folder.
 		If drawBoth == True, the method draw both approimations and their corresponding contour plots.
 	'''
-	K = regionPoints( corner, width, condition, N )
-
-	Points = K[0]
+	#K = regionPoints( corner, width, condition, N )
+	gamma_circle = lambda t: 0j + 0.9 * np.exp(1j * t)
+	K=boundaryPoints(gamma_circle)
 
 	minRe = corner.real
 	maxRe = corner.real + width
@@ -397,12 +413,12 @@ def main():
 	#For convenience, it is possible to define the variables in the progrem and not have to go through the user interface
 
 	#Automatic variables can be changed here 
-	n = 150
+	n = 100
 	corner = -2-2j
 	width = 4.0
 #	condition = lambda z: (z.real)**2 + (z.imag)**2 < (0.9)**2
 	#condition = lambda z: abs((z.real) + (z.imag)) < 1
-	condition = lambda z: abs(z) <= 1.0
+	condition = lambda z: (abs(z.imag) <= 1) & (abs(z.real) <= 1)
 	# Q = lambda z: np.log(abs(1/(1-z)))
    # Q = lambda z: abs(z)
 	Q = lambda z: 0 * z

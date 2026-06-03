@@ -68,7 +68,26 @@ def regionPoints( corner = 0j, width = 1., condition = lambda z: 0*z + 1, N = 10
 	return Points, weight
 
 
-def boundaryPoints(gamma=lambda t: 0j + 0.9 * np.exp(1j * t),N=10000):
+def boundaryPoints(gamma=lambda t: 0j + 0.9 * np.exp(2*np.pi*1j * t),N=10000):
+	r'''
+	Example of usage:
+
+		Points, weight = boundaryPoints(lambda t: 0j + 0.9 * np.exp(2*np.pi*1j * t), 10000)
+
+	Returns:
+
+		Points:		A complex 1d-array of equally spaced points on the image of the curve
+		weight:		A real 1d-array of the weight of each segment of the curve has
+
+	Recieves:
+
+		gamma		a curve from [0,1] to C 			(default: circle with center 0 and radius 0.9)
+		N 			integer 							(default 10000)
+
+	Note that this works pretty much the same as the regionPoints() function, except it is used to get the Szegö kernel instead
+	of the Bergman kernel. In particular OrthogonalBasis() accepts either function.
+
+	'''
 	t=np.linspace(0,2*np.pi,N,endpoint=False)
 	dt=1/N
 
@@ -175,13 +194,6 @@ where
 
 	# L has no imaginary part. Cast to real.
 	return L.real
-
-def Szego(z, n, Q = lambda z: 0*z, K_boundary = boundaryPoints()):
-	S = np.sum(B*np.conjugate(B), axis=0)
-
-	# S has no imaginary part. Cast to real.
-	return S.real
-
 
 def Green( z, n, Q = lambda z: 0*z, K = regionPoints() ):
 
@@ -416,7 +428,7 @@ def main():
 	n = 100
 	corner = -2-2j
 	width = 4.0
-#	condition = lambda z: (z.real)**2 + (z.imag)**2 < (0.9)**2
+	#condition = lambda z: (z.real)**2 + (z.imag)**2 < (0.9)**2
 	#condition = lambda z: abs((z.real) + (z.imag)) < 1
 	condition = lambda z: (abs(z.imag) <= 1) & (abs(z.real) <= 1)
 	# Q = lambda z: np.log(abs(1/(1-z)))

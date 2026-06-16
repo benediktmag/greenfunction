@@ -1,7 +1,15 @@
 # Numerical calculations for the global extremal function 
 
-The global extremal function for a set $U\subset \mathbb C^n$ and a function $q:U\to [-\infty,+\infty]$ is defined as 
-\[
-	V_{U,q}(z) 
-\]
-<a href="https://www.codecogs.com/eqnedit.php?latex=U&space;\subset&space;\mathbb&space;C^n" target="_blank"><img src="https://latex.codecogs.com/gif.latex?U&space;\subset&space;\mathbb&space;C^n" title="U \subset \mathbb C^n" /></a>
+The global extremal function for a set $U\subset ℂ^n$ and a function $q:U\to (-\infty,+\infty]$ is defined as 
+
+$$V_{U,q}(z)=\sup\\{u(z)\colon u\in ℒ, u|_U\leq q\\}$$
+
+where $ℒ$ is the Lelong class which consists of those plurisubharmonic functions $u$ on $ℂ^n$ that fulfill
+
+$$u(z)-\log|z|\leq  O(1),\quad\text{when } |z|\to\infty.$$
+
+It is known that under certain conditions then if $\\{p_j\\}$ is an orthonormal basis for the space of polynomials on U weighted relative to $q$ then
+
+$$\lim_{n\to\infty} \frac{1}{2n}\log\left(\sum_{j=1}^n p_j(z)\overline{p_j(z)}\right)=V_{U,q}(z)$$.
+
+This code is intended to numerically approximate the global extremal function for subsets of $ℂ$ by this limit.

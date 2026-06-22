@@ -118,7 +118,7 @@ def orthogonalBasis(grid, n, Q, K):
     polysK[0] = np.ones_like(Points)
     polysGrid[0] = np.ones_like(grid)
 
-    norm = np.sqrt(innerProduct(polysK[0], polysGrid[0]).real)
+    norm = np.sqrt(innerProduct(polysK[0], polysK[0]).real)
     polysK[0] /= norm
     polysGrid[0] /= norm
 
@@ -135,7 +135,7 @@ def orthogonalBasis(grid, n, Q, K):
         norm = np.sqrt(innerProduct(polDK, polDK).real)
 
         if norm > 1e-14:
-            polysGrid[d] = polDK / norm
+            polysK[d] = polDK / norm
             polysGrid[d] = polDGrid / norm
         else:
             print(f"Warning: Norm collapsed at degree {d}.")

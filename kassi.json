@@ -1,0 +1,9 @@
+{
+    "n_polys": 50,
+    "corner": "-2-2j",
+    "width": 4.0,
+    "density": 100,
+    "preset": "none",
+    "cond_expr": "(abs(z.imag) <= 1) & (abs(z.real) <= 1)",
+    "q_expr": "0 * z"
+}

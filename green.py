@@ -15,6 +15,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import cm
+import argparse
+import json
 
 
 def regionPoints(corner = 0j, width = 1., condition = lambda z: 0*z + 1, N = 100):
@@ -181,7 +183,7 @@ def Ingmar(B):
     Returns:
 
         S = |sum_j  a_j*p_j(z)|
-where
+    where
         a_j 	normal distributed complex numbers with mean 0
     '''
 
@@ -350,11 +352,11 @@ def interface() :
             break
         print('Too small or too large. Try again.')# Choosing corner
     print('Type the lower left corner point of graph '
-        '(complex number of the form 4+4j). Automatic is 0.')
+        '(complex number of the form 4+4j). Automatic is -2-2j.')
     while True:
         s = input()
         if s == '' :
-            corner = 0+0j
+            corner = -2-2j
             break
         try :
             corner = complex(s.replace(" ",""))
@@ -400,18 +402,22 @@ def interface() :
             while True:
                 tempcond = input()
                 if tempcond != '' :
-                    condition = lambda z: eval(tempcond)
+                    Q = lambda z: eval(tempcond)
                     break
             break
         if tfwa in ("w", "W"):
-            print("Specify the name of the name of the file you would like to create."
+            print("Specify the name of the name of the file you would like to create. "
             "Make sure you do not overwrite any existing file. No need for .txt.")
             name = input() + ".txt"
             cond = input("Now type the conditions.")
             qtemp = input("Now type Q.")
             with open(name, 'w') as file:
                 file.write(cond+"\n" +qtemp)
+
+            condition = lambda z: eval(cond)
+            Q = lambda z: eval(qtemp)
             break
+
         if tfwa in ("r", "R"):
             nafni  = input("Type the name of your file or press i for instructions.")
             if nafni in ("i", "I"):
@@ -435,6 +441,45 @@ def interface() :
     return (n, corner, width, condition, Q)
 
 
+def parse_arguments():
+    """Parses command line arguments and JSON config files."""
+
+    file_parser = argparse.ArgumentParser(add_help=False)
+    file_parser.add_argument('-f', '--file', type=str, help="Path to JSON configuration file.")
+
+    args, _ = file_parser.parse_known_args()
+
+    defaults = {}
+    if args.file:
+        try:
+            with open(args.file, 'r') as f:
+                defaults = json.load(f)
+
+            if 'corner' in defaults and isinstance(defaults['corner'], str):
+                defaults['corner'] = complex(defaults['corner'].replace(" ", ""))
+
+        except json.JSONDecodeError as e:
+            print(f"Error parsing JSON file: {e}")
+
+    parser = argparse.ArgumentParser(
+        description="Calculate and visualize the nth approximation of a weighted Green function.",
+        formatter_class=argparse.RawTextHelpFormatter
+    )
+
+    parser.add_argument('-f', '--file', type=str, help="Path to JSON configuration file.")
+
+    parser.add_argument('-n', '--n_polys', type=int, default=50, help="Number of polynomials.")
+    parser.add_argument('-c', '--corner', type=complex, default=-2-2j, help="Lower left corner point (e.g., -2-2j).")
+    parser.add_argument('-w', '--width', type=float, default=4.0, help="Width of the graph.")
+    parser.add_argument('-d', '--density', type=int, default=100, help="Density of the grid (N).")
+
+    parser.add_argument('-b','--cond_expr', type=str, default="(abs(z.imag) <= 1) & (abs(z.real) <= 1)", help="Python expression string for the region condition.")
+    parser.add_argument('-q','--q_expr', type=str, default="0 * z", help="Python expression string for the Q function.")
+
+    parser.set_defaults(**defaults)
+
+    return parser.parse_args()
+
 
     #Main function vill ask you for n, corner and width,
     # and the user has four choices about determening condition and Q
@@ -443,23 +488,27 @@ def main():
     #and not have to go through the user interface
 
     #Automatic variables can be changed here
-    n = 100
-    corner = -2-2j
-    width = 4.0
+    #n = 100
+    #corner = -2-2j
+    #width = 4.0
     #condition = lambda z: (z.real)**2 + (z.imag)**2 < (0.9)**2
     #condition = lambda z: abs((z.real) + (z.imag)) < 1
-    condition = lambda z: (abs(z.imag) <= 1) & (abs(z.real) <= 1)
+    #condition = lambda z: (abs(z.imag) <= 1) & (abs(z.real) <= 1)
     # Q = lambda z: np.log(abs(1/(1-z)))
     # Q = lambda z: abs(z)
-    Q = lambda z: 0 * z
+    #Q = lambda z: 0 * z
 
     #Here you choose whether or not to use the interface.
-    yn = input("Would you like to adjust the variables through the user interface? (y/n)\n")
-    if yn in ('n', 'N'):
-        drawGreen( n, Q, corner, width, condition, 100, save = False )
-    else :
-        (n, corner, width, condition, Q) = interface()
-        drawGreen( n, Q, corner, width, condition, 100, save = False )
+    #yn = input("Would you like to adjust the variables through the user interface? (y/n)\n")
+    #if yn in ('n', 'N'):
+    #    drawGreen( n, Q, corner, width, condition, 100, save = False )
+    #else :
+    #    (n, corner, width, condition, Q) = interface()
+    #    drawGreen( n, Q, corner, width, condition, 100, save = False )
+    args = parse_arguments()
+    condition = lambda z: eval(args.cond_expr)
+    Q = lambda z: eval(args.q_expr)
+    drawGreen(args.n_polys, Q, args.corner, args.width, condition, args.density, save=False)
 
 
 if __name__ == '__main__':

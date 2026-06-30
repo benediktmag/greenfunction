@@ -1,2 +1,10 @@
-envs
+.egg-info/
+*.egg-info/
+build/
+dist/
+__pycache__/
+*.py[cod]
+
+venv/
+.env
 .pylintrc

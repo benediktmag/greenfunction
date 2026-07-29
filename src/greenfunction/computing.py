@@ -41,7 +41,7 @@ def region_points(grid, width, condition, n_grid = 100):
     return points, weight
 
 
-def boundary_points(gamma=lambda t: 0j + 0.9 * np.exp(2*np.pi*1j * t), n_points=10000):
+def boundary_points(gamma=lambda t: 0j + 0.9 * np.exp(1j * t), n_points=10000):
     '''
     Inputs:
         - gamma: a closed simple curve [0,1]->C

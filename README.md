@@ -16,15 +16,17 @@ This code is intended to numerically approximate the global extremal function fo
 
 ## Usage
 
-The code needs `python 3`, `matplotlib` and `numpy`. For those using _Conda_ there is an `environment.yml` file you can use to create an environment:
+The package needs `python 3`, `matplotlib` and `numpy`. For those using _Conda_ there is an `environment.yml` file you can use to create an environment:
 
 ```
 conda env create -f environment.yml
 conda activate greenfunction
+pip install -e .
 ```
 
 To run the program run
 
 ```
-python green.py
+python src/greenfunction/main.py
 ```
+Use the `-h` flag to see avaiable options.

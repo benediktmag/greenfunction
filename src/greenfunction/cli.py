@@ -54,6 +54,8 @@ def parse_arguments():
     parser.add_argument('--curve_expr', type=str, default="0j + 0.9 * np.exp(1j * t)",
     help="Expression for boundary curve gamma(t), t in [0, 2pi)")
     parser.add_argument('--n_boundary', type=int, default=10000, help="Number of sample points on the boundary.")
+    parser.add_argument('--boundary_vals', type=str, default="z.real**2-z.imag**2",
+    help="Prescribed boundary values which the Dirichlet problem should be solved for")
 
     parser.add_argument('-s', '--save_settings', type=str, help="Save current settings to a JSON file (e.g., 'name' or 'name.json').")
     parser.add_argument('-o', '--output', type=str, default=None,

@@ -41,16 +41,16 @@ def region_points(grid, width, condition, n_grid = 100):
     return points, weight
 
 
-def boundary_points(gamma=lambda t: 0j + 0.9 * np.exp(1j * t), n_points=10000):
+def boundary_points(gamma=lambda t: 0j + 0.9 * np.exp(1j * t), boundary_n=10000):
     '''
     Inputs:
         - gamma: a closed simple curve [0,1]->C
-        - n_points: the number of points on the curve
+        - boundary_n: the number of points on the curve
 
     Returns: An array of evenly spaced points on the curve along with the weight of their segments.
     '''
-    t = np.linspace(0,2*np.pi,n_points,endpoint=False)
-    dt = 1/n_points
+    t = np.linspace(0,2*np.pi,boundary_n,endpoint=False)
+    dt = 1/boundary_n
 
     points = gamma(t)
 
@@ -145,7 +145,7 @@ def ingmar(basis):
 
     realParts = np.random.normal(0, 1, len(basis))
     imagParts = np.random.normal(0, 1, len(basis))
-    a=realParts+imagParts*1j
+    a = realParts + imagParts*1j
 
     S = np.tensordot(a, basis, axes=1)
     L = np.abs(S)
@@ -199,3 +199,26 @@ def george_approx(z, n, region, q_func = lambda z: 0*z):
     basis = orthogonal_basis(z, region, n, q_func)
 
     return np.log(ingmar(basis))/(1.*n)
+
+def dirichlet_szego(grid, gamma, boundary_func, n, boundary_n, q_func = lambda z: 0*z):
+
+    boundary = boundary_points(gamma, boundary_n)
+    boundary_vals = boundary[1]*boundary_func(boundary[0])
+
+    grid_flat = grid.ravel()
+    eval_points = np.concatenate([grid_flat,boundary[0]])
+
+    basis=orthogonal_basis(eval_points, boundary, n, q_func)
+
+    basis_grid = basis[:, :len(grid_flat)]
+    basis_boundary = basis[:, len(grid_flat):]
+
+    S_zz=bergman(basis_grid)
+
+    M = (np.conjugate(basis_boundary) * boundary_vals) @ basis_boundary.T
+
+    u = np.sum(basis_grid * np.tensordot(M, np.conjugate(basis_grid), axes=(1, 0)), axis=0).real
+    u = u / (S_zz+1e-15)
+
+    return u.reshape(grid.shape)
+

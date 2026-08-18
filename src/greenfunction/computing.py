@@ -73,14 +73,17 @@ def orthogonal_basis(grid, region, n, q_func):
     Returns: An array consisting of the values the n polynomials take on the grid.
 
     '''
+    #define a weight and an inner product with that weight
     points, weight = region
     W = weight * np.exp(-2. * n * q_func(points))
 
     def innerProduct(p_eval, q_eval):
         return np.sum(p_eval * np.conjugate(q_eval) * W)
 
+    #We create two arrays, polys_region[i] stores the values of the i-th
+    #polynomial on the grid points making up the region, polys_grid stores
+    #values on the entire grid.
     polys_region = np.zeros((n, len(points)), dtype=complex)
-
     polys_grid = np.zeros((n,) + np.shape(grid), dtype=complex)
 
     polys_region[0] = np.ones_like(points)
@@ -90,6 +93,7 @@ def orthogonal_basis(grid, region, n, q_func):
     polys_region[0] /= norm
     polys_grid[0] /= norm
 
+    #To find polynomial i+1 we take polynomial i and multiply it by z, then orthogonalize.
     for d in range(1, n):
         pol_d_region = points * polys_region[d-1]
         pol_d_grid = grid * polys_grid[d-1]
@@ -200,9 +204,21 @@ def george_approx(z, n, region, q_func = lambda z: 0*z):
 
     return np.log(ingmar(basis))/(1.*n)
 
-def dirichlet_szego(grid, gamma, boundary_func, n, boundary_n, q_func = lambda z: 0*z):
+def dirichlet_szego(grid, gamma, boundary_func, n, boundary_density, q_func = lambda z: 0*z):
+    '''
+    Takes in a closed curve in the complex plane and prescribed values on said curve.
+    Solves the Dirichlet problem on the interior of the curve using the Szegö kernel
+    Input:
+        - grid: The grid where we want to evaluate
+        - gamma: curve [0,1]->\C
+        - boundary_func: The values taken on gamma([0,1])
+        - n: Degree of the approximation of the Szegö kernel
+        - boundary_density: How many points on gamma to use for calculation
+        - q_func: weight function
+    Returns: An array consisting of the solution to the given Dirichlet problem evaluated the grid.
+    '''
 
-    boundary = boundary_points(gamma, boundary_n)
+    boundary = boundary_points(gamma, boundary_density)
     boundary_vals = boundary[1]*boundary_func(boundary[0])
 
     grid_flat = grid.ravel()
